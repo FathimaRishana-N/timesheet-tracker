@@ -69,6 +69,21 @@ app.post('/user', (req, res) => {
 });
 
 //  add project and assign employees
+//get employees in the dropdown list
+app.get("/getEmployees", (req, res) => {
+  const query = "SELECT user_id, username FROM user WHERE role = 'employee'";
+
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error("Error fetching employees:", err);
+      res.status(500).json({ error: "Failed to fetch employees." });
+      return;
+    }
+
+    res.json(results); 
+  });
+});
+//add project
 app.post('/addProject', async (req, res) => {
     const { project_name, start_date, assignedEmployees } = req.body;
       try {
