@@ -1,23 +1,37 @@
-import React, { useState } from "react";
-import axios from 'axios';
+import React, { useState, useEffect } from "react";
+import axios from "axios";
 import Navbar from "./Navbar";
+import Select from "react-select";
 
 const ProjectAdd = () => {
   const [projects, setProjects] = useState({
-    project_name: '',
-    start_date: '',
+    project_name: "",
+    start_date: "",
   });
-  const [assignedEmployees, setAssignedEmployees] = useState([""]);
+  const [assignedEmployees, setAssignedEmployees] = useState([]); // Array for selected employees
   const [message, setMessage] = useState("");
-//adding more than one employee
-  const handleAddEmployee = () => {
-    setAssignedEmployees([...assignedEmployees, ""]);
-  };
+  const [allEmployees, setAllEmployees] = useState([]); // List of all employees
 
-  const handleEmployeeChange = (index, value) => {
-    const updatedEmployees = [...assignedEmployees];
-    updatedEmployees[index] = value;
-    setAssignedEmployees(updatedEmployees);
+  // Fetch employee list from backend
+  useEffect(() => {
+    const fetchEmployees = async () => {
+      try {
+        const response = await axios.get("http://localhost:5000/getEmployees");
+        setAllEmployees(response.data.map(emp => ({
+          label: `${emp.username} (${emp.user_id})`,
+          value: emp.user_id
+        }))); // Format for react-select
+      } catch (err) {
+        console.error("Error fetching employees:", err);
+      }
+    };
+
+    fetchEmployees();
+  }, []);
+
+  // Handle selection of multiple employees
+  const handleEmployeeSelection = (selectedOptions) => {
+    setAssignedEmployees(selectedOptions || []);
   };
 
   // Add project and associated employees
@@ -27,30 +41,37 @@ const ProjectAdd = () => {
     const projectData = {
       project_name: projects.project_name,
       start_date: projects.start_date,
-      assignedEmployees: assignedEmployees,
+      assignedEmployees: assignedEmployees.map((emp) => emp.value), // Send only employee IDs
     };
 
     try {
-      const response = await axios.post('http://localhost:5000/addProject', projectData);
+      const response = await axios.post("http://localhost:5000/addProject", projectData);
       setMessage(response.data);
 
       // Reset form on successful addition
-      setProjects({ project_name: '', start_date: '' });
-      setAssignedEmployees([""]);
+      setProjects({ project_name: "", start_date: "" });
+      setAssignedEmployees([]);
     } catch (err) {
-      setMessage("Error adding project or employees: " + err.response.data || "Server error");
+      setMessage("Error adding project or employees: " + (err.response?.data || "Server error"));
     }
   };
 
   return (
     <div>
-    <Navbar />
-    <div className="d-flex justify-content-center align-items-center" style={{ minHeight: 'calc(100vh - 56px)' }}>
-      <div className="card p-4" style={{ maxWidth: '800px', width: '100%' }}>
+      <Navbar />
+      <div
+        className="d-flex justify-content-center align-items-center"
+        style={{ minHeight: "calc(100vh - 56px)" }}
+      >
+        <div className="card p-4" style={{ maxWidth: "800px", width: "100%" }}>
           <h2 className="text-center text-primary mb-4">Add New Project</h2>
 
           {message && (
-            <div className={`alert ${message.includes("Error") ? 'alert-danger' : 'alert-success'} text-center`}>
+            <div
+              className={`alert ${
+                message.includes("Error") ? "alert-danger" : "alert-success"
+              } text-center`}
+            >
               {message}
             </div>
           )}
@@ -61,7 +82,9 @@ const ProjectAdd = () => {
               <input
                 type="text"
                 value={projects.project_name}
-                onChange={e => setProjects({ ...projects, project_name: e.target.value })}
+                onChange={(e) =>
+                  setProjects({ ...projects, project_name: e.target.value })
+                }
                 className="form-control"
                 placeholder="Enter project name"
               />
@@ -71,31 +94,27 @@ const ProjectAdd = () => {
               <input
                 type="date"
                 value={projects.start_date}
-                onChange={e => setProjects({ ...projects, start_date: e.target.value })}
+                onChange={(e) =>
+                  setProjects({ ...projects, start_date: e.target.value })
+                }
                 className="form-control"
               />
             </div>
             <div className="mb-3">
-              <label className="form-label">Assigned Employees:</label>
-              {assignedEmployees.map((employee, index) => (
-                <div className="input-group mb-2" key={index}>
-                  <input
-                    type="text"
-                    value={employee}
-                    onChange={(e) => handleEmployeeChange(index, e.target.value)}
-                    className="form-control"
-                    placeholder={`Enter Employee-ID ${index + 1}`}
-                  />
-                </div>
-              ))}
-              <button
-                type="button"
-                onClick={handleAddEmployee}
-                className="btn btn-outline-primary mt-2 w-100"
-              >
-                Add Another Employee
-              </button>
+              <label className="form-label">Assign Employees:</label>
+              <Select
+                isMulti
+                name="employees"
+                options={allEmployees}
+                value={assignedEmployees}
+                onChange={handleEmployeeSelection}
+                placeholder="Select employees"
+                getOptionLabel={(e) => `${e.label}`}
+                className="react-select-container"
+                classNamePrefix="react-select"
+              />
             </div>
+
             <button type="submit" className="btn btn-primary w-100">
               Submit
             </button>
