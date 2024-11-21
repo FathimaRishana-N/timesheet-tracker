@@ -39,17 +39,16 @@ app.post('/login', (req, res) => {
         if (user.password !== password) {
             return res.json("Invalid password");
         }
-        const userRole = user.role; 
-        res.json({
-            username: user.username,
-            role: userRole,
-        });
-         // Sending Employee_id to employee front end
-            {/*  const employeeid=user.user_id;
-                 res.json({employeeid:user.user_id});
-                
-                */}
-    });
+        const response = {
+          username: user.username,
+          role: user.role,
+      };
+      if (user.role === 'employee') {
+          response.employeeId = user.user_id; 
+      }
+
+      res.json(response);
+  });
 });
 
 //save user data
@@ -69,54 +68,63 @@ app.post('/user', (req, res) => {
 });
 
 //  add project and assign employees
-app.post('/addProject', async (req, res) => {
-    const { project_name, start_date, assignedEmployees } = req.body;
-      try {
-      const employeeValidationPromises = assignedEmployees.map(employee_id => 
-        new Promise((resolve, reject) => {
-          db.query(
-            "SELECT * FROM user WHERE user_id = ? AND role = 'employee'",
-            [employee_id],
-            (err, results) => {
-              if (err) return reject(err);
-              if (results.length > 0) resolve(true); 
-              else resolve(false); 
-            }
-          );
-        })
-      );
-      const validationResults = await Promise.all(employeeValidationPromises);
-      const allValid = validationResults.every(result => result === true);
+//get employees in the dropdown list
+app.get("/getEmployees", (req, res) => {
+  const query = "SELECT user_id, username FROM user WHERE role = 'employee'";
+
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error("Error fetching employees:", err);
+      res.status(500).json({ error: "Failed to fetch employees." });
+      return;
+    }
+
+    res.json(results); 
+  });
+});
+//add project
+// get all employees
+app.get("/getEmployees", (req, res) => {
+    const query = "SELECT user_id, username FROM users WHERE role = 'employee'"; // Assuming a `users` table with employee info
+    db.query(query, (err, results) => {
+      if (err) {
+        console.error("Error fetching employees:", err);
+        return res.json({ message: "Server error" });
+      }
+      res.json(results); 
+    });
+  });
   
-      if (!allValid) {
-        return res.json("One or more employee IDs are invalid");
+  // add a project with assigned employees
+  app.post("/addProject", (req, res) => {
+    const { project_name, start_date, assignedEmployees } = req.body;
+  
+    const projectQuery = "INSERT INTO projects (project_name, start_date) VALUES (?, ?)";
+    db.query(projectQuery, [project_name, start_date], (err, result) => {
+      if (err) {
+        console.error("Error adding project:", err);
+        return res.json({ message: "Error adding project" });
       }
   
-      db.query(
-        "INSERT INTO projects (project_name, start_date) VALUES (?, ?)",
-        [project_name, start_date],
-        (err, result) => {
-          if (err) return res.json("Error adding project");
+      // Get the last inserted project ID
+      const projectId = result.insertId;
   
-          const project_id = result.insertId;
+      // Insert project-employee associations
+      const projectEmployeeQuery = "INSERT INTO project_employees (project_id, employee_id) VALUES ?";
+      const values = assignedEmployees.map((empId) => [projectId, empId]);
   
-          const values = assignedEmployees.map(employee_id => [project_id, employee_id]);
-          db.query(
-            "INSERT INTO project_employees (project_id, employee_id) VALUES ?",
-            [values],
-            (err) => {
-              if (err) return res.json("Error assigning employees to project");
-              res.json("Project and employees added successfully.");
-            }
-          );
+      db.query(projectEmployeeQuery, [values], (err) => {
+        if (err) {
+          console.error("Error associating employees with project:", err);
+          return res.json({ message: "Error associating employees with project" });
         }
-      );
-    } catch (err) {
-      console.error("Error processing request:", err);
-      res.json("Server error occurred.");
-    }
+  
+        res.json({ message: "Project and employees added successfully" });
+      });
+    });
   });
-
+  
+  
 //fetch Employees List from user table -dashboard
   app.get('/employees', (req, res) => {
     const sql = "SELECT user_id, username FROM user WHERE role = 'employee'";
