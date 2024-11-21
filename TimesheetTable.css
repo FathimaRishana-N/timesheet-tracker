@@ -1,0 +1,62 @@
+.timesheet-container {
+  margin: 20px;
+  font-family: Arial, sans-serif;
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+h2 {
+  text-align: center;
+}
+
+.current-date {
+  text-align: center;
+  margin-bottom: 20px;
+  font-size: 16px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+th, td {
+  padding: 8px;
+  text-align: center;
+  border: 1px solid #ddd;
+}
+
+th {
+  background-color: #f6a6a6;
+  font-weight: bold;
+}
+
+input[type="number"] {
+  width: 80px;
+  padding: 5px;
+  text-align: center;
+}
+
+input[type="date"] {
+  width: 120px;
+  padding: 5px;
+  text-align: center;
+}
+
+button {
+  padding: 10px 20px;
+  background-color: #bb121d;
+  color: white;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  margin: 20px auto;
+  display: block;
+  width: 200px;
+  border-radius: 5px;
+}
+
+button:hover {
+  background-color: #45a049;
+}
