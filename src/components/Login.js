@@ -16,7 +16,7 @@ const Login = () => {
                         if (res.data.role === 'admin') {
                         navigate("/admin-dashboard");
                     } else if (res.data.role === 'employee') {
-                        navigate("/employee-dashboard"); // here i need to pass the employeeid too { state: { employeeId: res.data.employeeId } }
+                        navigate("/TimesheetTable", { state: { employeeId: res.data.employeeId } });
                     }
                 } else {
                     alert("Invalid login! Please try again.");
